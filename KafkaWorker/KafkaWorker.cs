@@ -1,0 +1,59 @@
+﻿using Confluent.Kafka;
+
+namespace KafkaWorker
+{
+    public class KafkaWorker(IConsumer<string, long> kafkaConsumer, ILogger<KafkaWorker> logger) : BackgroundService
+    {
+        protected override Task ExecuteAsync(CancellationToken stoppingToken)
+        {
+            using var consumer = kafkaConsumer;
+            // Subscribe to the target topic
+            consumer.Subscribe("test");
+            logger.LogInformation("Subscribed to topic: test");
+
+            try
+            {
+                while (!stoppingToken.IsCancellationRequested)
+                {
+                    try
+                    {
+                        // Consume messages synchronously (the consumer is not thread‑safe)
+                        var result = consumer.Consume(stoppingToken);
+
+                        // Process the message immediately, as fast as possible
+                        ProcessMessage(result.Message.Value);
+                    }
+                    catch (ConsumeException ex)
+                    {
+                        logger.LogError(ex, "Error while consuming message: {Reason}", ex.Error.Reason);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // Graceful shutdown requested
+                        break;
+                    }
+                }
+            }
+            finally
+            {
+                consumer.Close();
+            }
+
+            return Task.CompletedTask;
+        }
+
+        private void ProcessMessage(long eventTime)
+        {
+            logger.LogInformation("Received event created at: {EventTime}", eventTime);
+
+            // Compare event creation time with current time (UTC)
+            var now = DateTime.UtcNow;
+            var eventDateTime = DateTimeOffset.FromUnixTimeSeconds(eventTime).DateTime;
+            var delay = now - eventDateTime;
+            logger.LogInformation("Delay between event creation and processing: {Delay}", delay);
+
+            // Here you can add your fast, synchronous processing logic
+            // without any artificial delays.
+        }
+    }
+}
