@@ -6,12 +6,16 @@ namespace QueueApi.Rabbit;
 
 public class RabbitProducer : IRabbitProducer, IDisposable
 {
+    private readonly ILogger<RabbitProducer> _logger;
     private readonly IModel _channel;
     private readonly SemaphoreSlim _semaphore = new(1, 1);
     private bool _disposed;
 
-    public RabbitProducer(IConnection rabbitConnection)
+    public RabbitProducer(
+        IConnection rabbitConnection,
+        ILogger<RabbitProducer> logger)
     {
+        _logger = logger;
         var rabbitConnection1 = rabbitConnection ?? throw new ArgumentNullException(nameof(rabbitConnection));
         _channel = rabbitConnection1.CreateModel();
     }
@@ -32,6 +36,7 @@ public class RabbitProducer : IRabbitProducer, IDisposable
                 routingKey: topic,
                 basicProperties: null,
                 body: body);
+            _logger.LogInformation("Rabbit message created");
         }
         finally
         {

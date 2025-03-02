@@ -53,6 +53,13 @@ builder.Eventing.Subscribe<ResourceReadyEvent>(rabbit.Resource, async (@event, c
         autoDelete: true,
         arguments: null);
 
+    channel.QueueDeclare(
+        queue: "testQ",
+        durable: true,
+        exclusive: false,
+        autoDelete: true,
+        arguments: null);
+
     Console.WriteLine("Exchange 'testEx' has been declared.");
 });
 
@@ -66,5 +73,11 @@ builder.AddProject<Projects.QueueApi>("queueapi")
 builder.AddProject<Projects.KafkaWorker>("kafkaworker")
     .WithReference(kafka)
     .WaitFor(kafka);
+
+builder.AddProject<Projects.RabbitWorker>("rabbitworker")
+    .WithReference(rabbit)
+    .WaitFor(rabbit);
+
+builder.AddProject<Projects.SqsWorker>("sqsworker");
 
 builder.Build().Run();

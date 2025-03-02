@@ -10,7 +10,8 @@ namespace QueueApi.Sqs
         {
             var request = new SendMessageRequest
             {
-                MessageBody = timestamp.ToString()
+                MessageBody = timestamp.ToString(),
+                QueueUrl = "test"
             };
 
             return amazonSqs.SendMessageAsync(request, cancellationToken);

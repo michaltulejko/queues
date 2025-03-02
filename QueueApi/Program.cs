@@ -1,6 +1,5 @@
 using Amazon.SQS;
 using inzynierka.ServiceDefaults;
-using LocalStack.Client.Extensions;
 using QueueApi.Kafka;
 using QueueApi.Kafka.Interfaces;
 using QueueApi.Rabbit;
@@ -26,9 +25,7 @@ public class Program
         builder.Services.AddSwaggerGen();
 
         // AWS configuration
-        builder.Services.AddLocalStack(builder.Configuration);
         builder.Services.AddDefaultAWSOptions(builder.Configuration.GetAWSOptions());
-        var test = builder.Configuration.GetAWSOptions();
         builder.Services.AddAWSService<IAmazonSQS>();
 
         // Kafka configuration

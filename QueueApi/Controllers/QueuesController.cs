@@ -15,15 +15,12 @@ public class QueuesController(
     ISqsProducer sqsProducer)
     : ControllerBase
 {
-
-    [HttpGet(Name = "GetMessagesStats")]
-    public async Task<IEnumerable<string>> Get()
+    [HttpGet("kafka", Name = "GetKafkaMessagesStats")]
+    public async Task<ActionResult> GetKafka(int messagesCount)
     {
-        logger.LogInformation("GetMessagesStats called");
-
+        logger.LogInformation("GetKafkaMessagesStats called");
         var ids = new ConcurrentBag<Guid>();
-
-        Parallel.For(0, 10000, i =>
+        Parallel.For(0, messagesCount, i =>
         {
             ids.Add(Guid.NewGuid());
         });
@@ -32,12 +29,48 @@ public class QueuesController(
         {
             var unixTimeSeconds = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds();
             await kafkaProducer.ProduceAsync("test", id, unixTimeSeconds, cancellationToken);
-            unixTimeSeconds = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds();
+        });
+
+        return Ok();
+    }
+
+    [HttpGet("rabbit", Name = "GetRabbitMessagesStats")]
+    public async Task<ActionResult> GetRabbit(int messagesCount)
+    {
+        logger.LogInformation("GetRabbitMessagesStats called");
+        var ids = new ConcurrentBag<Guid>();
+
+        Parallel.For(0, messagesCount, i =>
+        {
+            ids.Add(Guid.NewGuid());
+        });
+
+        await Parallel.ForEachAsync(ids, async (id, cancellationToken) =>
+        {
+            var unixTimeSeconds = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds();
             await rabbitProducer.ProduceAsync("test", id, unixTimeSeconds, cancellationToken);
-            unixTimeSeconds = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds();
+        });
+
+        return Ok();
+    }
+
+    [HttpGet("sqs", Name = "GetSqsMessagesStats")]
+    public async Task<ActionResult> GetSqs(int messagesCount)
+    {
+        logger.LogInformation("GetSqsMessagesStats called");
+        var ids = new ConcurrentBag<Guid>();
+
+        Parallel.For(0, messagesCount, i =>
+        {
+            ids.Add(Guid.NewGuid());
+        });
+
+        await Parallel.ForEachAsync(ids, async (id, cancellationToken) =>
+        {
+            var unixTimeSeconds = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds();
             await sqsProducer.ProduceAsync("test", id, unixTimeSeconds, cancellationToken);
         });
 
-        return new[] { "value1", "value2" };
+        return Ok();
     }
 }

@@ -20,6 +20,8 @@
   <ItemGroup>
     <ProjectReference Include="..\KafkaWorker\KafkaWorker.csproj" />
     <ProjectReference Include="..\QueueApi\QueueApi.csproj" />
+    <ProjectReference Include="..\RabbitWorker\RabbitWorker.csproj" />
+    <ProjectReference Include="..\SqsWorker\SqsWorker.csproj" />
   </ItemGroup>
 
 </Project>
