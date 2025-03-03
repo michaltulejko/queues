@@ -16,6 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Common\Common.csproj" />
     <ProjectReference Include="..\inzynierka.ServiceDefaults\inzynierka.ServiceDefaults.csproj" />
   </ItemGroup>
 </Project>

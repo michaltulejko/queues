@@ -1,17 +1,15 @@
 ﻿using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using System.Text;
-using System.Text.Json;
+using MongoDB.Bson;
+using MongoDB.Driver;
 
 namespace Common;
 
-public class MetricsFlusher(ILogger<MetricsFlusher> logger, MetricsCollector collector) : BackgroundService
+public class MetricsFlusher(
+    ILogger<MetricsFlusher> logger,
+    MetricsCollector collector,
+    IMongoClient mongoClient) : BackgroundService
 {
-    // File to which we append the metrics.
-    private readonly string _filePath = "metrics.jsonl";
-    private readonly MetricsCollector _collector = collector;
-    private readonly ILogger<MetricsFlusher> _logger = logger;
-
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         // Flush metrics every 5 seconds (adjust as needed)
@@ -24,23 +22,25 @@ public class MetricsFlusher(ILogger<MetricsFlusher> logger, MetricsCollector col
 
     private async Task FlushMetricsAsync()
     {
-        var measurements = _collector.DequeueAll().ToList();
+        var measurements = collector.DequeueAll().ToList();
         if (!measurements.Any())
         {
             return;
         }
 
-        // Build the JSON Lines string.
-        var sb = new StringBuilder();
-        foreach (var measurement in measurements)
+        var database = mongoClient.GetDatabase("metrics");
+        var collection = database.GetCollection<BsonDocument>("delay");
+
+        foreach (var document in measurements.Select(measurement => new BsonDocument
+                 {
+                     { "timestamp", measurement.EventTime },
+                     { "delay", measurement.Delay.TotalMilliseconds },
+                     { "queue", measurement.QueueName }
+                 }))
         {
-            // Serialize each measurement as a JSON object
-            var json = JsonSerializer.Serialize(measurement);
-            sb.AppendLine(json);
+            await collection.InsertOneAsync(document);
         }
 
-        // Append asynchronously to the file (non-blocking)
-        await File.AppendAllTextAsync(_filePath, sb.ToString());
-        _logger.LogInformation("Flushed {Count} metrics to file.", measurements.Count);
+        logger.LogInformation("Flushed {Count} metrics to file.", measurements.Count);
     }
 }

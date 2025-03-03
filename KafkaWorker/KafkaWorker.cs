@@ -1,9 +1,15 @@
-﻿using Confluent.Kafka;
+﻿using Common;
+using Confluent.Kafka;
 
 namespace KafkaWorker
 {
-    public class KafkaWorker(IConsumer<string, long> kafkaConsumer, ILogger<KafkaWorker> logger) : BackgroundService
+    public class KafkaWorker(
+        IConsumer<string, long> kafkaConsumer,
+        MetricsCollector metricsCollector,
+        ILogger<KafkaWorker> logger) : BackgroundService
     {
+        private const string QueueName = "Kafka";
+
         protected override Task ExecuteAsync(CancellationToken stoppingToken)
         {
             using var consumer = kafkaConsumer;
@@ -52,8 +58,7 @@ namespace KafkaWorker
             var delay = now - eventDateTime;
             logger.LogInformation("Delay between event creation and processing: {Delay}", delay);
 
-            // Here you can add your fast, synchronous processing logic
-            // without any artificial delays.
+            metricsCollector.Enqueue(new DelayMeasurement(eventTime, delay, QueueName));
         }
     }
 }

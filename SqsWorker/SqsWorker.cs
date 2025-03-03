@@ -10,8 +10,8 @@ public class SqsWorker(
     ILogger<SqsWorker> logger) : BackgroundService
 {
     // Read the SQS queue name from configuration.
-    private const string QueueName = "test";
     private const string QueueUrl = "test";
+    private const string QueueName = "SQS";
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -38,7 +38,7 @@ public class SqsWorker(
         try
         {
             // Assume the message body is a Unix timestamp (in seconds).
-            if (long.TryParse(message.Body, out long eventTime))
+            if (long.TryParse(message.Body, out var eventTime))
             {
                 var now = DateTime.UtcNow;
                 var eventDateTime = DateTimeOffset.FromUnixTimeSeconds(eventTime).DateTime;
@@ -46,7 +46,7 @@ public class SqsWorker(
                 logger.LogInformation("Delay between event creation and processing: {Delay}", delay);
 
                 // Record the metric in a thread-safe, non-blocking way.
-                metricsCollector.Enqueue(new DelayMeasurement(DateTime.UtcNow, delay));
+                metricsCollector.Enqueue(new DelayMeasurement(eventTime, delay, QueueName));
             }
             else
             {

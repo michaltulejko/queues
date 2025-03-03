@@ -1,3 +1,4 @@
+using Common;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System.Text;
@@ -6,6 +7,7 @@ namespace RabbitWorker;
 
 public class RabbitWorker(
     IConnection rabbitConnection,
+    MetricsCollector metricsCollector,
     ILogger<RabbitWorker> logger)
     : BackgroundService
 {
@@ -33,6 +35,8 @@ public class RabbitWorker(
             var eventDateTime = DateTimeOffset.FromUnixTimeSeconds(eventTime).DateTime;
             var delay = now - eventDateTime;
             logger.LogInformation("Delay between event creation and processing: {Delay}", delay);
+
+            metricsCollector.Enqueue(new DelayMeasurement(eventTime, delay, "Rabbit"));
 
             // Acknowledge the message after processing.
             _channel.BasicAck(deliveryTag: ea.DeliveryTag, multiple: false);
