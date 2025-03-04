@@ -1,5 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
+using MongoDB.Driver;
 using QueueApi.Kafka.Interfaces;
+using QueueApi.Models;
 using QueueApi.Rabbit.Interfaces;
 using QueueApi.Sqs.Interfaces;
 using System.Collections.Concurrent;
@@ -12,7 +16,8 @@ public class QueuesController(
     ILogger<QueuesController> logger,
     IKafkaProducer kafkaProducer,
     IRabbitProducer rabbitProducer,
-    ISqsProducer sqsProducer)
+    ISqsProducer sqsProducer,
+    IMongoClient mongoClient)
     : ControllerBase
 {
     [HttpGet("kafka", Name = "GetKafkaMessagesStats")]
@@ -72,5 +77,24 @@ public class QueuesController(
         });
 
         return Ok();
+    }
+
+    [HttpGet("statistics", Name = "GetAllMessagesStats")]
+    public async Task<ActionResult> GetQueueStatistics(string queueName, int recordsAmount)
+    {
+        var database = mongoClient.GetDatabase("metrics");
+        var collection = database.GetCollection<BsonDocument>("delay");
+
+        var filter = Builders<BsonDocument>.Filter.Eq("queue", queueName);
+        var options = new FindOptions<BsonDocument>
+        {
+            Limit = recordsAmount
+        };
+
+        var documents = await collection.FindAsync(filter, options);
+        var stats = await documents.ToListAsync();
+
+        var entities = stats.Select(doc => BsonSerializer.Deserialize<DelayEntity>(doc)).ToList();
+        return Ok(entities);
     }
 }

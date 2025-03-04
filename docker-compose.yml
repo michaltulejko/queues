@@ -15,5 +15,5 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '1.0'    # Limit CPU usage to 1 core
+          cpus: '0.5'    # Limit CPU usage to 1 core
           memory: 1G     # Limit memory to 1GB

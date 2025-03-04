@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <PackageReference Include="Aspire.Confluent.Kafka" Version="9.0.0" />
+    <PackageReference Include="Aspire.MongoDB.Driver" Version="9.0.0" />
     <PackageReference Include="Aspire.RabbitMQ.Client" Version="9.0.0" />
     <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="3.7.400" />
     <PackageReference Include="AWSSDK.SQS" Version="3.7.400.104" />

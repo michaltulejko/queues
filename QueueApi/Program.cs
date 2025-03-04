@@ -45,10 +45,24 @@ public class Program
         //RabbitMQ configuration
         builder.AddRabbitMQClient("messagingRabbitMQ");
 
+        //SQS configuration
+        builder.AddMongoDBClient(connectionName: "mongodb");
+
         // Services
         builder.Services.AddScoped<IKafkaProducer, KafkaProducer>();
         builder.Services.AddScoped<IRabbitProducer, RabbitProducer>();
         builder.Services.AddScoped<ISqsProducer, SqsProducer>();
+
+        // Add CORS policy
+        builder.Services.AddCors(options =>
+        {
+            options.AddPolicy("AllowFrontend", policy =>
+            {
+                policy.WithOrigins("http://localhost:3000", "http://localhost:3001")
+                    .AllowAnyHeader()
+                    .AllowAnyMethod();
+            });
+        });
 
         var app = builder.Build();
 
@@ -66,8 +80,10 @@ public class Program
 
         app.UseAuthorization();
 
-
         app.MapControllers();
+
+        // Use CORS
+        app.UseCors("AllowFrontend");
 
         app.Run();
 

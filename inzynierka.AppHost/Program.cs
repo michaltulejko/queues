@@ -8,15 +8,17 @@ var kafka = builder.AddKafka("messagingKafka")
     .WithKafkaUI(kafkaUi =>
         kafkaUi
             .WithHostPort(9100)
-            .WithContainerRuntimeArgs("--memory=1g", "--cpus=1"))
-    .WithContainerRuntimeArgs("--memory=1g", "--cpus=1");
+            .WithContainerRuntimeArgs("--memory=1g", "--cpus=0.5"))
+    .WithContainerRuntimeArgs("--memory=1g", "--cpus=0.5");
 
 var rabbit = builder.AddRabbitMQ("messagingRabbitMQ")
-    .WithContainerRuntimeArgs("--memory=1g", "--cpus=1");
+    .WithContainerRuntimeArgs("--memory=1g", "--cpus=0.5");
 
 var mongo = builder.AddMongoDB("mongo")
     .WithDataBindMount(@"C:\MongoDB\Data")
-    .WithMongoExpress();
+    .WithContainerRuntimeArgs("--memory=1g", "--cpus=0.5")
+    .WithMongoExpress(express => 
+        express.WithContainerRuntimeArgs("--memory=1g", "--cpus=0.5"));
 
 var mongodb = mongo.AddDatabase("mongodb");
 
