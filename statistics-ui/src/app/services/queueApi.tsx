@@ -1,5 +1,5 @@
 import { Observable, from, forkJoin } from 'rxjs';
-import { switchMap, map, catchError } from 'rxjs/operators';
+import { map, catchError } from 'rxjs/operators';
 import { MessageData } from "../types/messageData";
 
 // List of queues to fetch data for
@@ -27,7 +27,9 @@ export function fetchMessageData(recordsAmount: number = 10): Observable<Message
                     ...item,
                     queueName: item.queueName || queueName
                 }))
-            )
+            ),
+            // Normalize timestamps per queue
+            map(data => normalizeTimestampsPerQueue(data, queueName))
         );
     });
 
@@ -42,4 +44,23 @@ export function fetchMessageData(recordsAmount: number = 10): Observable<Message
             throw error;
         })
     );
+}
+
+// Function to normalize timestamps for each queue separately
+function normalizeTimestampsPerQueue(data: MessageData[], queueName: string): MessageData[] {
+    if (data.length === 0) return data;
+
+    // Find the earliest timestamp for this queue
+    const earliestTimestamp = Math.min(...data.map(item => item.timeStamp));
+
+    // Normalize all timestamps relative to the earliest in this queue
+    return data.map(item => ({
+        ...item,
+        // Store original timestamp in a new property
+        originalTimeStamp: item.timeStamp,
+        // Replace timeStamp with seconds from start (normalized) for this queue
+        timeStamp: item.timeStamp - earliestTimestamp,
+        // Add queue name if not present
+        queueName: item.queueName || queueName
+    }));
 }

@@ -79,7 +79,7 @@ public class QueuesController(
         return Ok();
     }
 
-    [HttpGet("statistics", Name = "GetAllMessagesStats")]
+    [HttpGet("statistics", Name = "GetQueueStatistics")]
     public async Task<ActionResult> GetQueueStatistics(string queueName, int recordsAmount)
     {
         var database = mongoClient.GetDatabase("metrics");

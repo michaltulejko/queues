@@ -26,7 +26,7 @@ export default function messageCountChart({ data }: MessageCountChartProps) {
                     <Legend wrapperStyle={{ color: '#4b5563' }} />
                     <Line type="monotone" dataKey="Kafka" stroke="#8884d8" strokeWidth={2} />
                     <Line type="monotone" dataKey="SQS" stroke="#82ca9d" strokeWidth={2} />
-                    <Line type="monotone" dataKey="RabbitMQ" stroke="#ff7300" strokeWidth={2} />
+                    <Line type="monotone" dataKey="Rabbit" stroke="#ff7300" strokeWidth={2} />
                 </LineChart>
             </ResponsiveContainer>
         </div>
