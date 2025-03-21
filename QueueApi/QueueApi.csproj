@@ -9,19 +9,20 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Aspire.Confluent.Kafka" Version="9.0.0" />
-    <PackageReference Include="Aspire.MongoDB.Driver" Version="9.0.0" />
-    <PackageReference Include="Aspire.RabbitMQ.Client" Version="9.0.0" />
+    <PackageReference Include="Aspire.Confluent.Kafka" Version="9.1.0" />
+    <PackageReference Include="Aspire.MongoDB.Driver" Version="9.1.0" />
+    <PackageReference Include="Aspire.RabbitMQ.Client" Version="9.1.0" />
     <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="3.7.400" />
-    <PackageReference Include="AWSSDK.SQS" Version="3.7.400.104" />
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.2" />
+    <PackageReference Include="AWSSDK.SQS" Version="3.7.400.117" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.3" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.21.2" />
-    <PackageReference Include="Swashbuckle.AspNetCore.Swagger" Version="7.3.1" />
-    <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" Version="7.3.1" />
-    <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="7.3.1" />
+    <PackageReference Include="Swashbuckle.AspNetCore.Swagger" Version="8.0.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" Version="8.0.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="8.0.0" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Common\Common.csproj" />
     <ProjectReference Include="..\inzynierka.ServiceDefaults\inzynierka.ServiceDefaults.csproj" />
   </ItemGroup>
 

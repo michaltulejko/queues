@@ -1,26 +1,32 @@
-﻿using Confluent.Kafka;
+﻿using Common;
+using Confluent.Kafka;
 using QueueApi.Kafka.Interfaces;
 
 namespace QueueApi.Kafka
 {
     public class KafkaProducer(
-        IProducer<string, long> producer,
+        IProducer<string, MessageTime> producer,
         ILogger<KafkaProducer>? logger = null)
         : IKafkaProducer, IDisposable
     {
-        private readonly IProducer<string, long> _producer = producer ?? throw new ArgumentNullException(nameof(producer));
+        private readonly IProducer<string, MessageTime> _producer = producer ?? throw new ArgumentNullException(nameof(producer));
         private readonly SemaphoreSlim _semaphore = new(1, 1);
         private bool _disposed;
 
-        public async Task ProduceAsync(string topic, Guid key, long timestamp, CancellationToken cancellationToken = default)
+        public async Task ProduceAsync(string topic, Guid key, long entryTimestamp, CancellationToken cancellationToken = default)
         {
             if (_disposed)
                 throw new ObjectDisposedException(nameof(KafkaProducer));
 
-            var message = new Message<string, long>
+            var unixTimeSeconds = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds();
+            var message = new Message<string, MessageTime>
             {
                 Key = key.ToString(),
-                Value = timestamp
+                Value = new MessageTime
+                {
+                    EntryTimeStamp = entryTimestamp,
+                    ProcessingTimeStamp = unixTimeSeconds
+                }
             };
 
             // Use SemaphoreSlim for better async handling in high-concurrency scenarios
@@ -40,7 +46,6 @@ namespace QueueApi.Kafka
         public void Dispose()
         {
             if (_disposed) return;
-            _producer.Dispose();
             _semaphore.Dispose();
             _disposed = true;
         }

@@ -30,9 +30,9 @@ public class QueuesController(
             ids.Add(Guid.NewGuid());
         });
 
+        var unixTimeSeconds = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds();
         await Parallel.ForEachAsync(ids, async (id, cancellationToken) =>
         {
-            var unixTimeSeconds = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds();
             await kafkaProducer.ProduceAsync("test", id, unixTimeSeconds, cancellationToken);
         });
 
@@ -50,9 +50,9 @@ public class QueuesController(
             ids.Add(Guid.NewGuid());
         });
 
+        var unixTimeSeconds = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds();
         await Parallel.ForEachAsync(ids, async (id, cancellationToken) =>
         {
-            var unixTimeSeconds = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds();
             await rabbitProducer.ProduceAsync("test", id, unixTimeSeconds, cancellationToken);
         });
 
@@ -70,9 +70,9 @@ public class QueuesController(
             ids.Add(Guid.NewGuid());
         });
 
+        var unixTimeSeconds = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds();
         await Parallel.ForEachAsync(ids, async (id, cancellationToken) =>
         {
-            var unixTimeSeconds = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds();
             await sqsProducer.ProduceAsync("test", id, unixTimeSeconds, cancellationToken);
         });
 

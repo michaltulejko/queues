@@ -2,6 +2,6 @@
 {
     public interface IKafkaProducer
     {
-        Task ProduceAsync(string topic, Guid key, long timestamp, CancellationToken cancellationToken = default);
+        Task ProduceAsync(string topic, Guid key, long entryTimestamp, CancellationToken cancellationToken = default);
     }
 }

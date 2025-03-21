@@ -53,21 +53,21 @@ builder.Eventing.Subscribe<ResourceReadyEvent>(rabbit.Resource, async (@event, c
     {
         var factory = new ConnectionFactory { Uri = new Uri(cs) };
 
-        using var connection = factory.CreateConnection();
-        using var channel = connection.CreateModel();
+        await using var connection = await factory.CreateConnectionAsync();
+        await using var channel = await connection.CreateChannelAsync();
 
-        channel.ExchangeDeclare(
+        await channel.ExchangeDeclareAsync(
             exchange: "testEx",
             type: ExchangeType.Direct,
             durable: true,
-            autoDelete: true,
+            autoDelete: false,
             arguments: null);
 
-        channel.QueueDeclare(
+        await channel.QueueDeclareAsync(
             queue: "testQ",
             durable: true,
             exclusive: false,
-            autoDelete: true,
+            autoDelete: false,
             arguments: null);
     }
 

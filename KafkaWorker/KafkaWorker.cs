@@ -4,7 +4,7 @@ using Confluent.Kafka;
 namespace KafkaWorker
 {
     public class KafkaWorker(
-        IConsumer<string, long> kafkaConsumer,
+        IConsumer<string, MessageTime> kafkaConsumer,
         MetricsCollector metricsCollector,
         ILogger<KafkaWorker> logger) : BackgroundService
     {
@@ -27,7 +27,7 @@ namespace KafkaWorker
                         var result = consumer.Consume(stoppingToken);
 
                         // Process the message immediately, as fast as possible
-                        ProcessMessage(result.Message.Value);
+                        ProcessMessage(result.Message);
                     }
                     catch (ConsumeException ex)
                     {
@@ -48,9 +48,9 @@ namespace KafkaWorker
             return Task.CompletedTask;
         }
 
-        private void ProcessMessage(long eventTime)
+        private void ProcessMessage(MessageTime messageTimeEvent)
         {
-            logger.LogInformation("Received event created at: {EventTime}", eventTime);
+            logger.LogInformation("Received event created at: {EventTime}", messageTimeEvent.EntryTimeStamp);
 
             // Compare event creation time with current time (UTC)
             var now = DateTime.UtcNow;
