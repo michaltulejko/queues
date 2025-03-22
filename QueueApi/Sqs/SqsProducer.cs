@@ -1,7 +1,9 @@
 ﻿using Amazon.SQS;
 using Amazon.SQS.Model;
+using Common;
 using QueueApi.Sqs.Interfaces;
 using System.Collections.Concurrent;
+using System.Text.Json;
 
 namespace QueueApi.Sqs
 {
@@ -15,7 +17,7 @@ namespace QueueApi.Sqs
         private readonly ConcurrentDictionary<string, string> _queueUrlCache = new();
         private bool _disposed;
 
-        public async Task ProduceAsync(string topic, Guid key, long timestamp, CancellationToken cancellationToken = default)
+        public async Task ProduceAsync(string topic, Guid key, long entryTimestamp, CancellationToken cancellationToken = default)
         {
             if (_disposed)
                 throw new ObjectDisposedException(nameof(SqsProducer));
@@ -23,9 +25,18 @@ namespace QueueApi.Sqs
             // Optimize by caching queue URLs instead of hardcoding them
             var queueUrl = await GetQueueUrlAsync(topic, cancellationToken);
 
+            var unixTimeSeconds = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds();
+            var processingMeasurements = new ProcessingMeasurements
+            {
+                EventCreatedTimeStamp = entryTimestamp,
+                ProcessingTimeStamp = unixTimeSeconds
+            };
+
+            var messageBody = JsonSerializer.Serialize(processingMeasurements);
+
             var request = new SendMessageRequest
             {
-                MessageBody = timestamp.ToString(),
+                MessageBody = messageBody,
                 QueueUrl = queueUrl
             };
 
@@ -35,7 +46,8 @@ namespace QueueApi.Sqs
             {
                 // AWS SDK already handles retries internally
                 var response = await _amazonSqs.SendMessageAsync(request, cancellationToken);
-                logger?.LogInformation("SQS message sent with ID: {MessageId}", response.MessageId);
+                logger?.LogInformation("SQS message sent with ID: {MessageId}, key: {Key}, value: {Value}",
+                    response.MessageId, key, processingMeasurements);
             }
             finally
             {

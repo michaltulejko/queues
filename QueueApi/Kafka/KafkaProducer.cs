@@ -1,15 +1,16 @@
 ﻿using Common;
 using Confluent.Kafka;
 using QueueApi.Kafka.Interfaces;
+using System.Text.Json;
 
 namespace QueueApi.Kafka
 {
     public class KafkaProducer(
-        IProducer<string, MessageTime> producer,
+        IProducer<string, string> producer,
         ILogger<KafkaProducer>? logger = null)
         : IKafkaProducer, IDisposable
     {
-        private readonly IProducer<string, MessageTime> _producer = producer ?? throw new ArgumentNullException(nameof(producer));
+        private readonly IProducer<string, string> _producer = producer ?? throw new ArgumentNullException(nameof(producer));
         private readonly SemaphoreSlim _semaphore = new(1, 1);
         private bool _disposed;
 
@@ -19,14 +20,16 @@ namespace QueueApi.Kafka
                 throw new ObjectDisposedException(nameof(KafkaProducer));
 
             var unixTimeSeconds = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds();
-            var message = new Message<string, MessageTime>
+            var result = new ProcessingMeasurements
+            {
+                EventCreatedTimeStamp = entryTimestamp,
+                ProcessingTimeStamp = unixTimeSeconds
+            };
+
+            var message = new Message<string, string>
             {
                 Key = key.ToString(),
-                Value = new MessageTime
-                {
-                    EntryTimeStamp = entryTimestamp,
-                    ProcessingTimeStamp = unixTimeSeconds
-                }
+                Value = JsonSerializer.Serialize(result)
             };
 
             // Use SemaphoreSlim for better async handling in high-concurrency scenarios

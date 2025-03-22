@@ -33,8 +33,8 @@ public class MetricsFlusher(
 
         foreach (var document in measurements.Select(measurement => new BsonDocument
                  {
-                     { "timestamp", measurement.EventTime },
-                     { "delay", measurement.Delay.TotalMilliseconds },
+                     { "timestamp", measurement.ProcessingTime },
+                     { "delay", measurement.ProcessingDelay.TotalMilliseconds },
                      { "queue", measurement.QueueName }
                  }))
         {

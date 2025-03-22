@@ -2,6 +2,7 @@ using Common;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System.Text;
+using System.Text.Json;
 
 namespace RabbitWorker;
 
@@ -11,6 +12,7 @@ public class RabbitWorker(
     ILogger<RabbitWorker> logger)
     : BackgroundService
 {
+    private const string QueueName = "Rabbit";
     private readonly IModel _channel = rabbitConnection.CreateModel();
 
     public override Task StartAsync(CancellationToken cancellationToken)
@@ -29,14 +31,10 @@ public class RabbitWorker(
         {
             var now = DateTime.UtcNow;
             var body = ea.Body.ToArray();
-            var message = Encoding.UTF8.GetString(body);
-            var eventTime = long.Parse(message);
-            // Compare event creation time with current time (UTC)
-            var eventDateTime = DateTimeOffset.FromUnixTimeSeconds(eventTime).DateTime;
-            var delay = now - eventDateTime;
-            logger.LogInformation("Delay between event creation and processing: {Delay}", delay);
+            var json = Encoding.UTF8.GetString(body);
+            var processingMeasurements = JsonSerializer.Deserialize<ProcessingMeasurements>(json);
 
-            metricsCollector.Enqueue(new DelayMeasurement(eventTime, delay, "Rabbit"));
+            ProcessMessage(processingMeasurements);
 
             // Acknowledge the message after processing.
             _channel.BasicAck(deliveryTag: ea.DeliveryTag, multiple: false);
@@ -46,6 +44,23 @@ public class RabbitWorker(
         _channel.BasicConsume(queue: "testQ", autoAck: false, consumer: consumer);
 
         return base.StartAsync(cancellationToken);
+    }
+
+    private void ProcessMessage(ProcessingMeasurements processingMeasurementsEvent)
+    {
+        var processingTime = processingMeasurementsEvent.ProcessingTimeStamp;
+        logger.LogInformation("Received event created at: {EventTime}", processingMeasurementsEvent.EventCreatedTimeStamp);
+        var creationTime = processingMeasurementsEvent.EventCreatedTimeStamp;
+
+        // Compare event creation time with current time (UTC)
+        var now = DateTime.UtcNow;
+        var processingDateTime = DateTimeOffset.FromUnixTimeSeconds(processingTime).DateTime;
+        var processingDelay = now - processingDateTime;
+        var creationDateTime = DateTimeOffset.FromUnixTimeSeconds(creationTime).DateTime;
+        var creationDelay = now - creationDateTime;
+        logger.LogInformation("Delay between event creation and processing: {Delay}", processingDelay);
+
+        metricsCollector.Enqueue(new DelayMeasurement(creationTime, creationDelay, processingTime, processingDelay, QueueName));
     }
 
     protected override Task ExecuteAsync(CancellationToken stoppingToken)

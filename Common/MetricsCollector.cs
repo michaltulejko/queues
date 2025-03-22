@@ -22,6 +22,11 @@ public class MetricsCollector
     }
 }
 
-public record DelayMeasurement(long EventTime, TimeSpan Delay, string QueueName)
+public record DelayMeasurement(
+    long QueueCreationTime,
+    TimeSpan QueueCreationDelay,
+    long ProcessingTime,
+    TimeSpan ProcessingDelay,
+    string QueueName)
 {
 }

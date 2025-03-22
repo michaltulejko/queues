@@ -1,10 +1,11 @@
-﻿using Common;
+﻿using System.Text.Json;
+using Common;
 using Confluent.Kafka;
 
 namespace KafkaWorker
 {
     public class KafkaWorker(
-        IConsumer<string, MessageTime> kafkaConsumer,
+        IConsumer<string, string> kafkaConsumer,
         MetricsCollector metricsCollector,
         ILogger<KafkaWorker> logger) : BackgroundService
     {
@@ -25,9 +26,10 @@ namespace KafkaWorker
                     {
                         // Consume messages synchronously (the consumer is not thread‑safe)
                         var result = consumer.Consume(stoppingToken);
+                        var measurements = JsonSerializer.Deserialize<ProcessingMeasurements>(result.Message.Value);
 
                         // Process the message immediately, as fast as possible
-                        ProcessMessage(result.Message);
+                        ProcessMessage(measurements ?? default);
                     }
                     catch (ConsumeException ex)
                     {
@@ -48,17 +50,21 @@ namespace KafkaWorker
             return Task.CompletedTask;
         }
 
-        private void ProcessMessage(MessageTime messageTimeEvent)
+        private void ProcessMessage(ProcessingMeasurements? processingMeasurementsEvent)
         {
-            logger.LogInformation("Received event created at: {EventTime}", messageTimeEvent.EntryTimeStamp);
+            var processingTime = processingMeasurementsEvent.ProcessingTimeStamp;
+            logger.LogInformation("Received event created at: {EventTime}", processingMeasurementsEvent.EventCreatedTimeStamp);
+            var creationTime = processingMeasurementsEvent.EventCreatedTimeStamp;
 
             // Compare event creation time with current time (UTC)
             var now = DateTime.UtcNow;
-            var eventDateTime = DateTimeOffset.FromUnixTimeSeconds(eventTime).DateTime;
-            var delay = now - eventDateTime;
-            logger.LogInformation("Delay between event creation and processing: {Delay}", delay);
+            var processingDateTime = DateTimeOffset.FromUnixTimeSeconds(processingTime).DateTime;
+            var processingDelay = now - processingDateTime;
+            var creationDateTime = DateTimeOffset.FromUnixTimeSeconds(creationTime).DateTime;
+            var creationDelay = now - creationDateTime;
+            logger.LogInformation("Delay between event creation and processing: {Delay}", processingDelay);
 
-            metricsCollector.Enqueue(new DelayMeasurement(eventTime, delay, QueueName));
+            metricsCollector.Enqueue(new DelayMeasurement(creationTime, creationDelay, processingTime, processingDelay, QueueName));
         }
     }
 }

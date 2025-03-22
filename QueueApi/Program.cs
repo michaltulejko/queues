@@ -40,7 +40,7 @@ public class Program
         builder.Services.AddAWSService<IAmazonSQS>();
 
         // Kafka configuration
-        builder.AddKafkaProducer<string, long>("messagingKafka");
+        builder.AddKafkaProducer<string, string>("messagingKafka");
 
         //RabbitMQ configuration
         builder.AddRabbitMQClient("messagingRabbitMQ");

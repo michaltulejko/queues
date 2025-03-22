@@ -1,6 +1,8 @@
-﻿using QueueApi.Rabbit.Interfaces;
+﻿using Common;
+using QueueApi.Rabbit.Interfaces;
 using RabbitMQ.Client;
 using System.Text;
+using System.Text.Json;
 
 namespace QueueApi.Rabbit
 {
@@ -20,12 +22,20 @@ namespace QueueApi.Rabbit
             _channel = rabbitConnection1.CreateModel();
         }
 
-        public async Task ProduceAsync(string topic, Guid key, long timestamp, CancellationToken cancellationToken = default)
+        public async Task ProduceAsync(string topic, Guid key, long entryTimestamp, CancellationToken cancellationToken = default)
         {
             if (_disposed)
                 throw new ObjectDisposedException(nameof(RabbitProducer));
 
-            var body = Encoding.UTF8.GetBytes(timestamp.ToString());
+            var unixTimeSeconds = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds();
+            var processingMeasurements = new ProcessingMeasurements
+            {
+                EventCreatedTimeStamp = entryTimestamp,
+                ProcessingTimeStamp = unixTimeSeconds
+            };
+
+            var json = JsonSerializer.Serialize(processingMeasurements);
+            var body = Encoding.UTF8.GetBytes(json);
 
             // Use SemaphoreSlim for async thread safety
             await _semaphore.WaitAsync(cancellationToken);
@@ -36,7 +46,8 @@ namespace QueueApi.Rabbit
                     routingKey: topic,
                     basicProperties: null,
                     body: body);
-                _logger?.LogInformation("Rabbit message created with key: {Key}, value: {Value}", key, timestamp);
+                _logger?.LogInformation("Rabbit message sent with key: {Key}, value: {Value}",
+                    key, processingMeasurements);
             }
             finally
             {

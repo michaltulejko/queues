@@ -1,6 +1,7 @@
 using Amazon.SQS;
 using Amazon.SQS.Model;
 using Common;
+using System.Text.Json;
 
 namespace SqsWorker;
 
@@ -37,20 +38,16 @@ public class SqsWorker(
     {
         try
         {
-            // Assume the message body is a Unix timestamp (in seconds).
-            if (long.TryParse(message.Body, out var eventTime))
-            {
-                var now = DateTime.UtcNow;
-                var eventDateTime = DateTimeOffset.FromUnixTimeSeconds(eventTime).DateTime;
-                var delay = now - eventDateTime;
-                logger.LogInformation("Delay between event creation and processing: {Delay}", delay);
+            // Deserialize the message body to ProcessingMeasurements
+            var processingMeasurements = JsonSerializer.Deserialize<ProcessingMeasurements>(message.Body);
 
-                // Record the metric in a thread-safe, non-blocking way.
-                metricsCollector.Enqueue(new DelayMeasurement(eventTime, delay, QueueName));
+            if (processingMeasurements != null)
+            {
+                ProcessMessage(processingMeasurements);
             }
             else
             {
-                logger.LogWarning("Unable to parse event time from message: {MessageBody}", message.Body);
+                logger.LogWarning("Unable to deserialize message: {MessageBody}", message.Body);
             }
 
             // Delete the message after processing.
@@ -64,5 +61,22 @@ public class SqsWorker(
         {
             logger.LogError(ex, "Error processing message: {Message}", message.Body);
         }
+    }
+
+    private void ProcessMessage(ProcessingMeasurements processingMeasurementsEvent)
+    {
+        var processingTime = processingMeasurementsEvent.ProcessingTimeStamp;
+        logger.LogInformation("Received event created at: {EventTime}", processingMeasurementsEvent.EventCreatedTimeStamp);
+        var creationTime = processingMeasurementsEvent.EventCreatedTimeStamp;
+
+        // Compare event creation time with current time (UTC)
+        var now = DateTime.UtcNow;
+        var processingDateTime = DateTimeOffset.FromUnixTimeSeconds(processingTime).DateTime;
+        var processingDelay = now - processingDateTime;
+        var creationDateTime = DateTimeOffset.FromUnixTimeSeconds(creationTime).DateTime;
+        var creationDelay = now - creationDateTime;
+        logger.LogInformation("Delay between event creation and processing: {Delay}", processingDelay);
+
+        metricsCollector.Enqueue(new DelayMeasurement(creationTime, creationDelay, processingTime, processingDelay, QueueName));
     }
 }

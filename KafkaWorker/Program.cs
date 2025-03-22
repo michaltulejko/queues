@@ -20,7 +20,7 @@ public class Program
         builder.Services.AddHostedService<KafkaWorker>();
 
 
-        builder.AddKafkaConsumer<string, long>("messagingKafka", static settings =>
+        builder.AddKafkaConsumer<string, string>("messagingKafka", static settings =>
         {
             settings.Config.GroupId = "test-group";
             settings.Config.AutoOffsetReset = AutoOffsetReset.Earliest;
