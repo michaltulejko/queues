@@ -5,6 +5,8 @@ import { useObservable } from "../../hooks/useObservable";
 import MessageCountChart from "../charts/messageCountChart";
 import ProcessingDelayChart from "../charts/processingDelayChart";
 import MessageDataTable from "../tables/messageDataTable";
+import QueueCreationChart from "../charts/queueCreationChart";
+import QueueCreationDelayChart from "../charts/queueCreationDelayChart";
 import {
     loadMessageData,
     selectChartData,
@@ -13,7 +15,9 @@ import {
     selectError,
     selectMessageData,
     selectRecordsPerQueue,
-    setRecordsAmount
+    setRecordsAmount,
+    selectCreationChartData,
+    selectCreationDelayChartData,
 } from "../../store/dataStore";
 
 export default function Dashboard() {
@@ -27,9 +31,14 @@ export default function Dashboard() {
     const delayData = useObservable(selectDelayData(), []);
     const messageData = useObservable(selectMessageData(), []);
     const recordsPerQueue = useObservable(selectRecordsPerQueue(), 10);
+    const creationChartData = useObservable(selectCreationChartData(), []);
+    const creationDelayChartData = useObservable(selectCreationDelayChartData(), []);
 
     // Local state for input field - with string
     const [recordsInput, setRecordsInput] = useState("10");
+
+    // Add state for limiting charts on initial load
+    const [showFullCharts, setShowFullCharts] = useState(false);
 
     // Handle initial data loading
     useEffect(() => {
@@ -49,6 +58,17 @@ export default function Dashboard() {
             setRecordsInput(recordsPerQueue.toString());
         }
     }, [recordsPerQueue]);
+
+    useEffect(() => {
+        if (!loading && messageData.length > 0) {
+            // Delay the loading of full charts to improve initial rendering
+            const timer = setTimeout(() => {
+                setShowFullCharts(true);
+            }, 500);
+            
+            return () => clearTimeout(timer);
+        }
+    }, [loading, messageData.length]);
 
     const handleRecordsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setRecordsInput(e.target.value);
@@ -110,30 +130,70 @@ export default function Dashboard() {
                 </div>
             </div>
 
-            {loading && <div className="p-4 text-gray-600 font-medium">Loading data...</div>}
-            {error && <div className="p-4 text-red-600 font-medium">Error: {error}</div>}
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="bg-white p-6 rounded-lg shadow-md border border-gray-100">
-                    <h2 className="text-xl font-semibold mb-4 text-gray-800">Message Processing Count</h2>
-                    <MessageCountChart data={chartData} />
+            {loading && (
+                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+                    <div className="bg-white p-6 rounded-lg shadow-lg">
+                        <div className="flex items-center">
+                            <svg className="animate-spin h-5 w-5 mr-3 text-blue-500" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span>Processing {recordsPerQueue * 3} records...</span>
+                        </div>
+                    </div>
                 </div>
+            )}
 
-                <div className="bg-white p-6 rounded-lg shadow-md border border-gray-100">
-                    <h2 className="text-xl font-semibold mb-4 text-gray-800">Average Processing Delay</h2>
-                    <ProcessingDelayChart data={delayData} />
-                </div>
+            {!loading && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div className="bg-white p-6 rounded-lg shadow-md border border-gray-100 lg:col-span-2">
+                        <h2 className="text-xl font-semibold mb-4 text-gray-800">Data Summary</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="p-4 bg-blue-50 rounded-lg">
+                                <div className="text-lg font-medium">Records Processed</div>
+                                <div className="text-3xl font-bold text-blue-700">{messageData.length}</div>
+                            </div>
+                        </div>
+                    </div>
 
-                <div className="bg-white p-6 rounded-lg shadow-md border border-gray-100 lg:col-span-2">
-                    <h2 className="text-xl font-semibold mb-4 text-gray-800">
-                        Message Processing Data
-                        <span className="text-sm font-normal text-gray-500 ml-2">
-                            ({messageData.length} records)
-                        </span>
-                    </h2>
-                    <MessageDataTable data={messageData} />
+                    {showFullCharts && (
+                        <>
+                            <div className="bg-white p-6 rounded-lg shadow-md border border-gray-100">
+                                <h2 className="text-xl font-semibold mb-4 text-gray-800">Message Processing Count</h2>
+                                <MessageCountChart data={chartData} />
+                            </div>
+
+                            <div className="bg-white p-6 rounded-lg shadow-md border border-gray-100">
+                                <h2 className="text-xl font-semibold mb-4 text-gray-800">Average Processing Delay</h2>
+                                <p className="text-sm text-gray-500 mb-3">Average time (in seconds) each message queue takes to process messages</p>
+                                <ProcessingDelayChart data={delayData} />
+                            </div>
+
+                            <div className="bg-white p-6 rounded-lg shadow-md border border-gray-100">
+                                <h2 className="text-xl font-semibold mb-4 text-gray-800">Message Processing Time Distribution</h2>
+                                <p className="text-sm text-gray-500 mb-3">Shows how many messages had each processing delay value (in seconds)</p>
+                                <QueueCreationChart data={creationChartData} />
+                            </div>
+
+                            <div className="bg-white p-6 rounded-lg shadow-md border border-gray-100">
+                                <h2 className="text-xl font-semibold mb-4 text-gray-800">Queue Creation Delay Distribution</h2>
+                                <p className="text-sm text-gray-500 mb-3">Shows how many messages had each creation delay value (in seconds)</p>
+                                <QueueCreationDelayChart data={creationDelayChartData} />
+                            </div>
+                        </>
+                    )}
+
+                    <div className="bg-white p-6 rounded-lg shadow-md border border-gray-100 lg:col-span-2">
+                        <h2 className="text-xl font-semibold mb-4 text-gray-800">
+                            Message Processing Data
+                            <span className="text-sm font-normal text-gray-500 ml-2">
+                                ({messageData.length} records)
+                            </span>
+                        </h2>
+                        <MessageDataTable data={messageData} />
+                    </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 }

@@ -51,16 +51,13 @@ function normalizeTimestampsPerQueue(data: MessageData[], queueName: string): Me
     if (data.length === 0) return data;
 
     // Find the earliest timestamp for this queue
-    const earliestTimestamp = Math.min(...data.map(item => item.timeStamp));
+    const earliestTimestamp = Math.min(...data.map(item => item.processingTime));
 
     // Normalize all timestamps relative to the earliest in this queue
     return data.map(item => ({
         ...item,
-        // Store original timestamp in a new property
-        originalTimeStamp: item.timeStamp,
-        // Replace timeStamp with seconds from start (normalized) for this queue
-        timeStamp: item.timeStamp - earliestTimestamp,
-        // Add queue name if not present
+        originalTimeStamp: item.processingTime,
+        timeStamp: item.processingTime - earliestTimestamp,
         queueName: item.queueName || queueName
     }));
 }

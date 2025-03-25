@@ -2,11 +2,11 @@ import React, { useMemo } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { ChartData } from "../../types/chartData";
 
-interface MessageCountChartProps {
+interface QueueCreationDelayChartProps {
     data: ChartData[];
 }
 
-export default function MessageCountChart({ data }: MessageCountChartProps) {
+export default function QueueCreationDelayChart({ data }: QueueCreationDelayChartProps) {
     // Check if data is valid for rendering
     if (!data || data.length === 0) {
         return (
@@ -25,7 +25,7 @@ export default function MessageCountChart({ data }: MessageCountChartProps) {
     );
     
     if (!hasRequiredFormat) {
-        console.error("Chart data missing required format:", data);
+        console.error("QueueCreationDelayChart data missing required format:", data);
         return (
             <div className="h-80 flex items-center justify-center bg-gray-50 rounded-lg">
                 <div className="text-red-500">Data format error</div>
@@ -38,9 +38,6 @@ export default function MessageCountChart({ data }: MessageCountChartProps) {
         if (data.length > 60) return Math.ceil(data.length / 30);
         return 1;
     }, [data.length]);
-    
-    // Debug to see if data is arriving
-    console.log("MessageCountChart data:", data);
 
     return (
         <div className="h-80">
@@ -51,16 +48,18 @@ export default function MessageCountChart({ data }: MessageCountChartProps) {
                         dataKey="timestamp"
                         tick={{ fill: '#4b5563' }}
                         axisLine={{ stroke: '#9ca3af' }}
-                        // Only show a subset of ticks for better performance
+                        label={{ value: 'Queue Creation Delay (seconds)', position: 'insideBottomRight', offset: -5 }}
                         tickFormatter={(value, index) => index % tickInterval === 0 ? value : ''}
                     />
                     <YAxis
                         tick={{ fill: '#4b5563' }}
                         axisLine={{ stroke: '#9ca3af' }}
+                        label={{ value: 'Message Count', angle: -90, position: 'insideLeft' }}
                     />
                     <Tooltip 
                         contentStyle={{ backgroundColor: 'white', borderColor: '#e5e7eb' }}
-                        // Limit contents to improve performance
+                        formatter={(value: any) => [`${value} messages`, undefined]}
+                        labelFormatter={(label) => `Delay: ${label}s`}
                         itemSorter={(item) => -(item.value ?? 0)}
                     />
                     <Legend wrapperStyle={{ color: '#4b5563' }} />
@@ -69,7 +68,6 @@ export default function MessageCountChart({ data }: MessageCountChartProps) {
                         dataKey="Kafka" 
                         stroke="#8884d8" 
                         strokeWidth={2} 
-                        // Dot optimization for large data sets
                         dot={data.length > 100 ? false : { r: 2 }}
                         activeDot={{ r: 6 }}
                         isAnimationActive={data.length < 300}

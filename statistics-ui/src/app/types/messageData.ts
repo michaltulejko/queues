@@ -1,7 +1,8 @@
 export interface MessageData {
     id: string;
-    timeStamp: number;
-    originalTimeStamp?: number;
-    delay: number;
+    queueCreationTime: number;
+    queueCreationDelay: number;
+    processingTime: number;
+    processingDelay: number;
     queueName: string;
 }

@@ -23,15 +23,15 @@ export default function MessageDataTable({ data }: MessageDataTableProps) {
                         <tr key={message.id}>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{message.id}</td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {message.timeStamp}s
+                                {message.processingTime}s
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {message.originalTimeStamp ?
-                                    new Date(message.originalTimeStamp * 1000).toLocaleString() :
+                                {message.processingTime ?
+                                    new Date(message.processingTime * 1000).toLocaleString() :
                                     'N/A'
                                 }
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{message.delay.toFixed(2)}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{message.processingDelay.toFixed(2)}</td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{message.queueName}</td>
                         </tr>
                     ))}

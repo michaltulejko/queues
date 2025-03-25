@@ -1,5 +1,5 @@
-﻿using MongoDB.Bson.Serialization.Attributes;
-using MongoDB.Bson;
+﻿using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
 
 namespace QueueApi.Models
 {
@@ -10,11 +10,17 @@ namespace QueueApi.Models
         [BsonRepresentation(BsonType.ObjectId)]
         public string Id { get; set; }
 
-        [BsonElement("timestamp")]
-        public long TimeStamp { get; set; }
+        [BsonElement("queueCreationTime")]
+        public long QueueCreationTime { get; set; }
 
-        [BsonElement("delay")]
-        public double Delay { get; set; }
+        [BsonElement("queueCreationDelay")]
+        public double QueueCreationDelay { get; set; }
+
+        [BsonElement("processingTime")]
+        public long ProcessingTime { get; set; }
+
+        [BsonElement("processingDelay")]
+        public double ProcessingDelay { get; set; }
 
         [BsonElement("queue")]
         public string QueueName { get; set; }

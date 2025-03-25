@@ -15,7 +15,7 @@ public class MetricsFlusher(
         // Flush metrics every 5 seconds (adjust as needed)
         while (!stoppingToken.IsCancellationRequested)
         {
-            await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+            await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
             await FlushMetricsAsync();
         }
     }
@@ -33,8 +33,10 @@ public class MetricsFlusher(
 
         foreach (var document in measurements.Select(measurement => new BsonDocument
                  {
-                     { "timestamp", measurement.ProcessingTime },
-                     { "delay", measurement.ProcessingDelay.TotalMilliseconds },
+                     { "queueCreationTime", measurement.QueueCreationTime},
+                     { "queueCreationDelay", measurement.QueueCreationDelay.TotalMilliseconds},
+                     { "processingTime", measurement.ProcessingTime },
+                     { "processingDelay", measurement.ProcessingDelay.TotalMilliseconds },
                      { "queue", measurement.QueueName }
                  }))
         {

@@ -2,7 +2,12 @@ import { BehaviorSubject, Observable, catchError, map, shareReplay, tap, of } fr
 import { MessageData } from '../types/messageData';
 import { ChartData, DelayData } from '../types/chartData';
 import { fetchMessageData } from '../services/queueApi';
-import { processChartData, processDelayData } from '../utils/dataProcessing';
+import { 
+    processChartData, 
+    processDelayData, 
+    processCreationChartData,
+    processCreationDelayChartData
+} from '../utils/dataProcessing';
 
 // State interface
 interface DataState {
@@ -54,12 +59,29 @@ export const selectRecordsPerQueue = (): Observable<number> =>
 
 export const selectChartData = (): Observable<ChartData[]> =>
     selectMessageData().pipe(
-        map(data => data.length > 0 ? processChartData(data) : [])
+        map(data => {
+            console.log("Raw message data length:", data.length);
+            if (data.length === 0) return [];
+            
+            const processedData = processChartData(data);
+            console.log("Processed chart data:", processedData);
+            return processedData;
+        })
     );
 
 export const selectDelayData = (): Observable<DelayData[]> =>
     selectMessageData().pipe(
         map(data => data.length > 0 ? processDelayData(data) : [])
+    );
+
+export const selectCreationChartData = (): Observable<ChartData[]> =>
+    selectMessageData().pipe(
+        map(data => data.length > 0 ? processCreationChartData(data) : [])
+    );
+
+export const selectCreationDelayChartData = (): Observable<ChartData[]> =>
+    selectMessageData().pipe(
+        map(data => data.length > 0 ? processCreationDelayChartData(data) : [])
     );
 
 // Track if a request is in progress
