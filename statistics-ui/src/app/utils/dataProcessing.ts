@@ -141,7 +141,7 @@ export function processDelayData(messageData: MessageData[]): DelayData[] {
         delaysByQueue[item.queueName].push(item.processingDelay / 1000);
     });
 
-    // Calculate proper average for each queue
+    // Calculate proper median for each queue
     return Object.entries(delaysByQueue).map(([queueName, delays]) => {
         // Find median rather than mean for more robust measurement
         const sortedDelays = [...delays].sort((a, b) => a - b);

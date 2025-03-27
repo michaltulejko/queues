@@ -7,6 +7,7 @@ using QueueApi.Models;
 using QueueApi.Rabbit.Interfaces;
 using QueueApi.Sqs.Interfaces;
 using System.Collections.Concurrent;
+using System.Text;
 
 namespace QueueApi.Controllers;
 
@@ -97,4 +98,69 @@ public class QueuesController(
         var entities = stats.Select(doc => BsonSerializer.Deserialize<DelayEntity>(doc)).ToList();
         return Ok(entities);
     }
+
+    [HttpGet("export-csv", Name = "ExportQueueStatisticsCSV")]
+    public async Task<ActionResult> ExportQueueStatisticsCSV(string queueName, int recordsAmount)
+    {
+        logger.LogInformation("ExportQueueStatisticsCSV called for queue: {QueueName}, records: {RecordsAmount}",
+            queueName, recordsAmount);
+
+        try
+        {
+            var database = mongoClient.GetDatabase("metrics");
+            var collection = database.GetCollection<BsonDocument>("delay");
+
+            var filter = Builders<BsonDocument>.Filter.Eq("queue", queueName);
+            var options = new FindOptions<BsonDocument>
+            {
+                Limit = recordsAmount,
+                Sort = Builders<BsonDocument>.Sort.Descending("processingTime")
+            };
+
+            var documents = await collection.FindAsync(filter, options);
+            var stats = await documents.ToListAsync();
+
+            var entities = stats.Select(doc => BsonSerializer.Deserialize<DelayEntity>(doc)).ToList();
+
+            if (!entities.Any())
+            {
+                return NotFound($"No metrics found for queue '{queueName}'");
+            }
+
+            // Create CSV content
+            var csvBuilder = new StringBuilder();
+
+            // Add CSV header using the exact property names from the DelayEntity class
+            csvBuilder.AppendLine("Id,QueueCreationTime,QueueCreationDelay,ProcessingTime,ProcessingDelay,QueueName");
+
+            // Add data rows with raw values
+            foreach (var entity in entities)
+            {
+                csvBuilder.AppendLine(string.Join(",",
+                    entity.Id,
+                    entity.QueueCreationTime,
+                    entity.QueueCreationDelay,
+                    entity.ProcessingTime,
+                    entity.ProcessingDelay,
+                    entity.QueueName));
+            }
+
+            // Get the bytes of the CSV content
+            var csvBytes = Encoding.UTF8.GetBytes(csvBuilder.ToString());
+
+            // Set current timestamp for filename
+            var timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
+            var fileName = $"queue_metrics_{queueName}_{timestamp}.csv";
+
+            // Return as file download
+            return File(csvBytes, "text/csv", fileName);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error exporting CSV data for queue: {QueueName}", queueName);
+            return StatusCode(500, "An error occurred while generating the CSV file");
+        }
+    }
+
+
 }

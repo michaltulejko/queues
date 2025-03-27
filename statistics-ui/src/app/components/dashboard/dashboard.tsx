@@ -164,8 +164,8 @@ export default function Dashboard() {
                             </div>
 
                             <div className="bg-white p-6 rounded-lg shadow-md border border-gray-100">
-                                <h2 className="text-xl font-semibold mb-4 text-gray-800">Average Processing Delay</h2>
-                                <p className="text-sm text-gray-500 mb-3">Average time (in seconds) each message queue takes to process messages</p>
+                                <h2 className="text-xl font-semibold mb-4 text-gray-800">Median Processing Delay</h2>
+                                <p className="text-sm text-gray-500 mb-3">Median time (in seconds) each message queue takes to process messages</p>
                                 <ProcessingDelayChart data={delayData} />
                             </div>
 
